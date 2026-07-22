@@ -19,7 +19,7 @@ mode = st.sidebar.selectbox(
 )
 
 
-# Updated Custom Grading Scale Function
+# Custom Grading Scale Function
 def calculate_grade_gpa(percentage):
     if percentage >= 80:
         return "A", 4.0
@@ -43,25 +43,36 @@ def calculate_grade_gpa(percentage):
 if mode == "Individual Grading (Dynamic Subjects)":
     st.subheader("📝 Individual Student Report Card")
 
-    student_name = st.text_input("Student Name", "Abrish")
+    # Blank Student Name Input
+    student_name = st.text_input("Student Name", placeholder="Enter student name here...")
 
     st.write("### 📚 Enter Marks for Subjects")
     st.caption(
-        "💡 **Note:** Subject 1 to 5 pehle se set hain. Agar Subject 6, 7 wagera add karna chahte hain toh table ke neeche **`+` (Add row)** button par click karein."
+        "💡 **Note:** Subject 1 se 5 ke Obtained Marks mein apne marks enter karein. Extra subjects add karne ke liye table ke neeche **`+` (Add row)** button par click karein."
     )
 
-    # Default 5 Subjects with 100 Total Marks
+    # Default 5 Subjects with 0 Obtained Marks (User inputs them)
     default_data = pd.DataFrame([
-        {"Subject": "Subject 1", "Obtained Marks": 75, "Total Marks": 100},
-        {"Subject": "Subject 2", "Obtained Marks": 80, "Total Marks": 100},
-        {"Subject": "Subject 3", "Obtained Marks": 68, "Total Marks": 100},
-        {"Subject": "Subject 4", "Obtained Marks": 72, "Total Marks": 100},
-        {"Subject": "Subject 5", "Obtained Marks": 85, "Total Marks": 100},
+        {"Subject": "Subject 1", "Obtained Marks": 0, "Total Marks": 100},
+        {"Subject": "Subject 2", "Obtained Marks": 0, "Total Marks": 100},
+        {"Subject": "Subject 3", "Obtained Marks": 0, "Total Marks": 100},
+        {"Subject": "Subject 4", "Obtained Marks": 0, "Total Marks": 100},
+        {"Subject": "Subject 5", "Obtained Marks": 0, "Total Marks": 100},
     ])
 
-    # Dynamic Table allowing addition/deletion of rows
+    # Dynamic Interactive Table
     edited_df = st.data_editor(
-        default_data, num_rows="dynamic", use_container_width=True
+        default_data,
+        num_rows="dynamic",
+        use_container_width=True,
+        column_config={
+            "Obtained Marks": st.column_config.NumberColumn(
+                "Obtained Marks",
+                min_value=0,
+                max_value=100,
+                help="Enter obtained marks between 0 and 100",
+            )
+        },
     )
 
     if st.button("Generate Report Card", type="primary"):
@@ -71,7 +82,8 @@ if mode == "Individual Grading (Dynamic Subjects)":
             percentage = (total_obtained / total_max) * 100
             grade, gpa = calculate_grade_gpa(percentage)
 
-            st.success(f"### 🎯 Official Result Card for {student_name}")
+            disp_name = student_name if student_name else "Student"
+            st.success(f"### 🎯 Official Result Card for {disp_name}")
 
             # Key Summary Metrics
             col1, col2, col3, col4 = st.columns(4)
@@ -80,7 +92,7 @@ if mode == "Individual Grading (Dynamic Subjects)":
             col3.metric("Final Grade", grade)
             col4.metric("GPA", f"{gpa:.2f}")
 
-            # Individual Subject Breakdown with New Grading Scale
+            # Individual Subject Breakdown
             edited_df["Percentage"] = (
                 edited_df["Obtained Marks"] / edited_df["Total Marks"]
             ) * 100
