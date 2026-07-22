@@ -90,7 +90,6 @@ if mode == "Individual Grading (Dynamic Subjects)":
             total_obtained = edited_df["Obtained Marks"].sum()
             total_max = edited_df["Total Marks"].sum()
             overall_percentage = (total_obtained / total_max) * 100
-            overall_grade, _ = calculate_grade_gpa(overall_percentage)
 
             # GPA Calculation: Average of all Subject GPAs
             semester_gpa = edited_df["Subject GPA"].mean()
@@ -98,13 +97,12 @@ if mode == "Individual Grading (Dynamic Subjects)":
             disp_name = student_name if student_name else "Student"
             st.success(f"### 🎯 Official Result Card for {disp_name}")
 
-            # Top Summary Metrics (Total Obtained removed -> 3 Columns now)
-            col1, col2, col3 = st.columns(3)
+            # Top Summary Metrics (Only Percentage and GPA)
+            col1, col2 = st.columns(2)
             col1.metric("Overall Percentage", f"{overall_percentage:.2f}%")
-            col2.metric("Final Grade", overall_grade)
-            col3.metric("GPA", f"{semester_gpa:.2f}")
+            col2.metric("GPA", f"{semester_gpa:.2f}")
 
-            # Display Table without the 'Percentage' Column
+            # Display Table without 'Percentage' Column
             display_df = edited_df[
                 ["Subject", "Obtained Marks", "Total Marks", "Subject Grade", "Subject GPA"]
             ]
