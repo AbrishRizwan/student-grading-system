@@ -2,12 +2,14 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# App Title
-st.title("🎓 Student Grading & Performance Analytics System")
-st.write("Upload class records or calculate individual student grades instantly.")
+# Page Setup
+st.set_page_config(page_title="Student Grading System", page_icon="🎓", layout="wide")
 
-# Sidebar for Navigation
-mode = st.sidebar.selectbox("Select Mode", ["Individual Grading", "Class Analytics (CSV Upload)"])
+st.title("🎓 Smart Student Grading & Performance Analytics System")
+st.write("Customizable grading system for any course, degree, or class batch.")
+
+# Sidebar Navigation
+mode = st.sidebar.selectbox("Select Mode", ["Individual Grading (Dynamic Subjects)", "Class Analytics (CSV Upload)"])
 
 # Function to calculate Grade and GPA based on percentage
 def calculate_grade_gpa(percentage):
@@ -17,32 +19,51 @@ def calculate_grade_gpa(percentage):
     elif percentage >= 50: return "D", 1.0
     else: return "F", 0.0
 
-# --- MODE 1: INDIVIDUAL GRADING ---
-if mode == "Individual Grading":
+# --- MODE 1: DYNAMIC INDIVIDUAL GRADING ---
+if mode == "Individual Grading (Dynamic Subjects)":
     st.subheader("📝 Individual Student Report Card")
     
-    student_name = st.text_input("Student Name", "Ali")
+    student_name = st.text_input("Student Name", "Abrish")
     
-    # Subject Marks Inputs
-    col1, col2 = st.columns(2)
-    with col1:
-        stats_marks = st.number_input("Applied Statistics Marks (Out of 100)", 0, 100, 75)
-        math_marks = st.number_input("Mathematics Marks (Out of 100)", 0, 100, 68)
-    with col2:
-        sampling_marks = st.number_input("Sampling Techniques Marks (Out of 100)", 0, 100, 82)
-        law_marks = st.number_input("Introduction to Law Marks (Out of 100)", 0, 100, 55)
-        
-    if st.button("Generate Report Card"):
-        total_marks = stats_marks + math_marks + sampling_marks + law_marks
-        percentage = (total_marks / 400) * 100
-        grade, gpa = calculate_grade_gpa(percentage)
-        
-        # Display Results
-        st.success(f"### Report for {student_name}")
-        st.write(f"**Total Obtained Marks:** {total_marks} / 400")
-        st.write(f"**Percentage:** {percentage:.2f}%")
-        st.write(f"**Final Grade:** {grade}")
-        st.write(f"**GPA:** {gpa}")
+    st.write("### 📚 Enter Your Subjects & Marks")
+    st.caption("💡 **Tip:** Table mein kisi bhi cell par double-click karke Subject Name aur Marks change karein. Niche `+` button se naya subject add karein!")
+    
+    # Interactive Dynamic Table Template
+    default_data = pd.DataFrame([
+        {"Subject": "Subject 1", "Obtained Marks": 75, "Total Marks": 100},
+        {"Subject": "Subject 2", "Obtained Marks": 82, "Total Marks": 100},
+        {"Subject": "Subject 3", "Obtained Marks": 68, "Total Marks": 100},
+    ])
+    
+    # Allows adding/deleting rows dynamically
+    edited_df = st.data_editor(default_data, num_rows="dynamic", use_container_width=True)
+    
+    if st.button("Generate Report Card", type="primary"):
+        if not edited_df.empty and edited_df["Total Marks"].sum() > 0:
+            total_obtained = edited_df["Obtained Marks"].sum()
+            total_max = edited_df["Total Marks"].sum()
+            percentage = (total_obtained / total_max) * 100
+            grade, gpa = calculate_grade_gpa(percentage)
+            
+            st.success(f"### 🎯 Official Result for {student_name}")
+            
+            # Key Metrics Display
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Total Obtained", f"{total_obtained} / {total_max}")
+            col2.metric("Overall Percentage", f"{percentage:.2f}%")
+            col3.metric("Final Grade", grade)
+            col4.metric("GPA", f"{gpa:.2f}")
+            
+            # Individual Subject Breakdown
+            edited_df["Percentage"] = (edited_df["Obtained Marks"] / edited_df["Total Marks"]) * 100
+            results = edited_df["Percentage"].apply(calculate_grade_gpa)
+            edited_df["Subject Grade"] = [r[0] for r in results]
+            edited_df["Subject GPA"] = [r[1] for r in results]
+            
+            st.write("#### 📊 Detailed Subject Breakdown")
+            st.dataframe(edited_df, use_container_width=True)
+        else:
+            st.error("Please enter valid subject data before generating the report!")
 
 # --- MODE 2: CLASS ANALYTICS ---
 elif mode == "Class Analytics (CSV Upload)":
@@ -54,21 +75,18 @@ elif mode == "Class Analytics (CSV Upload)":
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
         
-        # Apply the grading function to the entire dataframe using Pandas
         results = df['Percentage'].apply(calculate_grade_gpa)
         df['Grade'] = [r[0] for r in results]
         df['GPA'] = [r[1] for r in results]
         
         st.write("### 📋 Processed Class Data", df)
         
-        # Statistical Summary
         st.write("### 📈 Class Statistical Summary")
         col1, col2, col3 = st.columns(3)
         col1.metric("Class Average Percentage", f"{df['Percentage'].mean():.2f}%")
         col2.metric("Highest Percentage", f"{df['Percentage'].max():.2f}%")
         col3.metric("Total Students Passed", f"{df[df['Grade'] != 'F'].shape[0]} / {df.shape[0]}")
         
-        # Visualizing Grade Distribution (Bar Chart)
         st.write("### 📊 Grade Distribution Chart")
         grade_counts = df['Grade'].value_counts().reindex(["A", "B", "C", "D", "F"], fill_value=0)
         
@@ -78,4 +96,3 @@ elif mode == "Class Analytics (CSV Upload)":
         ax.set_ylabel("Number of Students")
         ax.set_title("Overall Class Grade Distribution")
         st.pyplot(fig)
-        
